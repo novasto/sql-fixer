@@ -22,7 +22,7 @@ require $dir.'/autoload.php';
 $is_dry_run = false;
 $paths = [];
 
-for ($i=2;$i<$argc;$i++) {
+for ($i=1;$i<$argc;$i++) {
     if ($argv[$i] === '--dry-run') {
         $is_dry_run = true;
     } else {
@@ -35,11 +35,11 @@ $climate = new \League\CLImate\CLImate;
 $has_diff = false;
 
 try {
-    $paths = novasto\SqlFixer\SqlFixer::fileLists($dir.'/../', $paths);
+    $paths = Novasto\SqlFixer\SqlFixer::fileLists($dir.'/../', $paths);
 
     if ($is_dry_run) {
         foreach ($paths as $path) {
-            $res = novasto\SqlFixer\SqlFixer::diff($path);
+            $res = Novasto\SqlFixer\SqlFixer::diff($path);
             if ($res === false) {
                 continue;
             }
@@ -62,7 +62,7 @@ try {
         $climate->info('Checked '.count($paths).' files');
     } else {
         foreach ($paths as $path) {
-            $res = novasto\SqlFixer\SqlFixer::fix($path);
+            $res = Novasto\SqlFixer\SqlFixer::fix($path);
             if ($res === false) {
                 continue;
             }

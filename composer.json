@@ -1,7 +1,6 @@
 {
     "name": "novasto/sql-fixer",
     "description": "lint SQL in *.php *.sql files.",
-    "homepage": "https://github.com/novasto/sql-fixer/",
     "keywords": ["sql", "format", "lint"],
     "type": "library",
     "license": "MIT",
@@ -14,7 +13,7 @@
     "bin": ["bin/sql-fixer"],
     "autoload": {
         "psr-4": {
-            "novasto\\SqlFixer\\": "src/"
+            "Novasto\\SqlFixer\\": "src/"
         }
     },
     "require": {

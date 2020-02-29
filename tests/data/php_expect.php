@@ -2,12 +2,12 @@
 
 function test()
 {
-    $q = '';
-
     $aa = <<<SQL
 with -- comment
-as1 as ({$q}),
-as2 as ({$q})
+as1 as (
+  {$q1}, { $q1->func() }
+),
+as2 as ({$q2->func()})
 select
   *
 from

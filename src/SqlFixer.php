@@ -1,13 +1,13 @@
 <?php
 
-namespace novasto\SqlFixer;
+namespace Novasto\SqlFixer;
 
 use SebastianBergmann\Diff\Differ;
 
 class SqlFixer
 {
     /**
-     * Format and output to stdout
+     * Get diff
      *
      * @param string $path
      * @return string|false
@@ -45,7 +45,7 @@ class SqlFixer
     }
 
     /**
-     * Return formatted string
+     * Get formatted string
      *
      * @param string $path
      * @return array [$result, $has_diff]
@@ -56,7 +56,7 @@ class SqlFixer
         $source = $origin = file_get_contents($path);
 
         if (substr($path, -4) == '.php') {
-            preg_match_all('/<<<\s*[\'"]?SQL[\'"]?(.*?)SQL/s', $source, $matches);
+            preg_match_all('/<<<\s*[\'"]?SQL[\'"]?\n(.*?)\nSQL/s', $source, $matches);
             $matches = $matches[1];
         } elseif (substr($path, -4) == '.sql') {
             $matches = [$source];
@@ -65,16 +65,29 @@ class SqlFixer
         }
 
         foreach ($matches as $v) {
-            $formatted = \SqlFormatter::format(trim($v), false);
+            $mock_map = [];
+
+            $formatted = trim($v);
+
+            // replace variable
+            $formatted = preg_replace_callback('/\{ *\$.+?\}/', function($matches)use(&$mock_map){
+                $mock = 'sqlfixer_'.bin2hex(random_bytes(10));
+                $mock_map[$mock] = $matches[0];
+                return $mock;
+            }, $formatted);
+
+            // format
+            $formatted = \SqlFormatter::format($formatted, false);
+
+            // restore variable
+            foreach($mock_map as $mk => $mv){
+                $formatted = str_replace($mk, $mv, $formatted);
+            }
 
             // remove white space on EOL
-            $split_formatted = explode(PHP_EOL, $formatted);
-            foreach ($split_formatted as &$v2) {
-                $v2 = rtrim($v2);
-            }
-            unset($v2);
+            $formatted = preg_replace('/ \n/', "\n", $formatted);
 
-            $source = str_replace(trim($v), implode(PHP_EOL, $split_formatted), $source);
+            $source = str_replace($v, $formatted, $source);
         }
 
         return [$source, $source !== $origin];
@@ -93,18 +106,20 @@ class SqlFixer
         $lists = [];
 
         foreach ($paths as $path) {
-            if (!file_exists($root.$path)) {
+            $absolute_path = substr($path, 0, 1) === '/' ? $path : $root.$path;
+
+            if (!file_exists($absolute_path)) {
                 throw new \Exception("{$path} is not found");
             }
 
-            if (!is_dir($root.$path)) {
-                $lists[] = $root.$path;
+            if (!is_dir($absolute_path)) {
+                $lists[] = $absolute_path;
                 continue;
             }
 
             $files = new \RecursiveIteratorIterator(
                 new \RecursiveDirectoryIterator(
-                    $root.$path,
+                    $absolute_path,
                     \FilesystemIterator::CURRENT_AS_PATHNAME
                 )
             );
