@@ -1,0 +1,8 @@
+/vendor
+/.idea
+.php_cs.cache
+.phpunit.result.cache
+.DS_Store
+composer.phar
+_ide_helper.php
+*.iml

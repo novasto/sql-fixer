@@ -1,0 +1,81 @@
+#!/usr/bin/env php
+<?php
+// Load autoload.php
+$dir = __DIR__.'/..';
+
+if (!file_exists($dir.'/autoload.php')) {
+    $dir = __DIR__.'/../vendor';
+}
+
+if (!file_exists($dir.'/autoload.php')) {
+    $dir = __DIR__.'/../../..';
+}
+
+if (!file_exists($dir.'/autoload.php')) {
+    echo 'Autoload not found.';
+    exit(1);
+}
+
+require $dir.'/autoload.php';
+
+// Parse command
+$is_dry_run = false;
+$paths = [];
+
+for ($i=2;$i<$argc;$i++) {
+    if ($argv[$i] === '--dry-run') {
+        $is_dry_run = true;
+    } else {
+        $paths[] = $argv[$i];
+    }
+}
+
+// Exec
+$climate = new \League\CLImate\CLImate;
+$has_diff = false;
+
+try {
+    $paths = novasto\SqlFixer\SqlFixer::fileLists($dir.'/../', $paths);
+
+    if ($is_dry_run) {
+        foreach ($paths as $path) {
+            $res = novasto\SqlFixer\SqlFixer::diff($path);
+            if ($res === false) {
+                continue;
+            }
+
+            $has_diff = true;
+            $climate->yellow(str_replace($dir.'/../', '', $path));
+            foreach (explode(PHP_EOL, $res) as $v) {
+                if (strpos($v, '+') === 0) {
+                    $climate->green($v);
+                } elseif (strpos($v, '-') === 0) {
+                    $climate->red($v);
+                } elseif (strpos($v, '@@') === 0) {
+                    $climate->cyan($v);
+                } else {
+                    $climate->out($v);
+                }
+            }
+        }
+
+        $climate->info('Checked '.count($paths).' files');
+    } else {
+        foreach ($paths as $path) {
+            $res = novasto\SqlFixer\SqlFixer::fix($path);
+            if ($res === false) {
+                continue;
+            }
+
+            $has_diff = true;
+            $climate->yellow(str_replace($dir.'/../', '', $path));
+        }
+
+        $climate->info('Fixed '.count($paths).' files');
+    }
+} catch (Exception $e) {
+    $climate->backgroundRed($e->getMessage());
+    exit(1);
+}
+
+exit($is_dry_run && $has_diff ? 1 : 0);
